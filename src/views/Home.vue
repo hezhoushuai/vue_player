@@ -1,6 +1,6 @@
 <template>
   <div class="yp-home">
-    {{ searchData }}
+
   </div>
 </template>
 
@@ -9,14 +9,14 @@
 export default {
   data() {
     return {
-      searchData: {}
+
     }
   },
   created() {
-    this.$http.getHomeData()
-      .then(resp => {
-        this.searchData = resp
-      })
+
+  },
+  methods: {
+
   }
 }
 </script>
