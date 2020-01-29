@@ -1,5 +1,6 @@
 <template>
   <div class="loginPage">
+    <!-- 登录页面 -->
     <form class="login-form" action="javascript:void(0);">
       <h1>Login</h1>
       <div class="form-field">
@@ -14,6 +15,7 @@
       </div>
       <button type="submit" value="Login" class="btn" @click="handleLogin">Login</button>
     </form>
+
   </div>
 </template>
 
@@ -38,13 +40,19 @@ export default {
     handleLogin() {
       const { userName, passWord } = this
       console.log('isClick, username: ', userName, 'password:', passWord)
+      this.$http.startLogin(userName, passWord)
+        .then(resp => {
+          const { msg, code } = resp
+          this.$message({
+            type: code === 200 ? 'success' : 'error',
+            message: msg
+          })
+        })
     }
   }
 }
 </script>
 <style lang='scss' scoped>
-@import url(https://fonts.googleapis.com/css?family=Lato);
-
 .loginPage {
   display: flex;
   height: 100vh;
