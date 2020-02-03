@@ -5,7 +5,12 @@ import $http from './requests/index'
 import store from './store/index'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
+import Vant from 'vant'
+import 'vant/lib/index.css'
 import 'normalize.css'
+import { Lazyload } from 'vant'
+
+Vue.use(Lazyload)
 
 // 全局的混合
 Vue.mixin({
@@ -20,6 +25,7 @@ Vue.mixin({
 })
 
 Vue.use(ElementUI)
+Vue.use(Vant)
 
 router.beforeEach((to, from, next) => {
   next()

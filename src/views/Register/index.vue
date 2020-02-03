@@ -1,24 +1,31 @@
 <template>
   <!-- 注册页面 -->
   <div class="register-page">
-    <el-form ref="ruleForm" :model="ruleForm" status-icon :rules="rules" label-width="100px" class="demo-ruleForm login-form">
-      <el-form-item class="form-field" label="昵称" prop="nickName" required>
-        <el-input v-model="ruleForm.nickName" type="text" autocomplete="off"></el-input>
+    <el-form
+      ref="ruleForm"
+      :model="ruleForm"
+      status-icon
+      :rules="rules"
+      label-width="100px"
+      class="demo-ruleForm login-form"
+    >
+      <el-form-item class="form-field" label="昵称" prop="nickname" required>
+        <el-input v-model="ruleForm.nickname" type="text" autocomplete="off" />
       </el-form-item>
       <el-form-item class="form-field" label="手机号码" prop="phone" required>
-        <el-input v-model="ruleForm.phone" type="text" autocomplete="off"></el-input>
+        <el-input v-model="ruleForm.phone" type="text" autocomplete="off" />
       </el-form-item>
       <el-form-item class="form-field" label="验证码" prop="captcha">
         <div style="display: flex;">
-          <el-input v-model.number="ruleForm.captcha"></el-input>
+          <el-input v-model.number="ruleForm.captcha" />
           <el-button size="small" type="primary" @click="handleSendCaptcha">发送验证码</el-button>
         </div>
       </el-form-item>
       <el-form-item class="form-field" label="密码" prop="pass">
-        <el-input v-model="ruleForm.pass" type="password" autocomplete="off"></el-input>
+        <el-input v-model="ruleForm.pass" type="password" autocomplete="off" />
       </el-form-item>
       <el-form-item class="form-field" label="确认密码" prop="checkPass">
-        <el-input v-model="ruleForm.checkPass" type="password" autocomplete="off"></el-input>
+        <el-input v-model="ruleForm.checkPass" type="password" autocomplete="off" />
       </el-form-item>
       <el-form-item class="form-field">
         <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
@@ -29,25 +36,8 @@
 </template>
 
 <script>
-
 export default {
   data() {
-    var checkAge = (rule, value, callback) => {
-      if (!value) {
-        return callback(new Error('年龄不能为空'))
-      }
-      setTimeout(() => {
-        if (!Number.isInteger(value)) {
-          callback(new Error('请输入数字值'))
-        } else {
-          if (value < 18) {
-            callback(new Error('必须年满18岁'))
-          } else {
-            callback()
-          }
-        }
-      }, 1000)
-    }
     var validatePass = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('请输入密码'))
@@ -70,22 +60,21 @@ export default {
     return {
       phoneTest: /^1[3456789]\d{9}$/,
       ruleForm: {
-        userName: '',
         pass: '',
+        nickname: '',
         checkPass: '',
         captcha: '',
         phone: ''
       },
       rules: {
-        pass: [
-          { validator: validatePass, trigger: 'blur' }
-        ],
-        checkPass: [
-          { validator: validatePass2, trigger: 'blur' }
-        ],
-        age: [
-          { validator: checkAge, trigger: 'blur' }
-        ]
+        pass: [{
+          validator: validatePass,
+          trigger: 'blur'
+        }],
+        checkPass: [{
+          validator: validatePass2,
+          trigger: 'blur'
+        }]
       }
     }
   },
@@ -93,7 +82,8 @@ export default {
     // 验证手机好嘛是否被注册
     checkPhone(phone) {
       return new Promise((resolve, reject) => {
-        this.$http.checkPhoneNumber(phone)
+        this.$http
+          .checkPhoneNumber(phone)
           .then(resp => {
             resolve(resp)
           })
@@ -102,11 +92,23 @@ export default {
           })
       })
     },
-    // 点击发送验证码按钮
-    handleSendCaptcha() {
+    jumpToLogin() {
       const { phone } = this.ruleForm
-      const { phoneTest, checkPhone } = this
-      if (!(phoneTest.test(phone))) {
+      this.$router.push({
+        path: '/login',
+        params: { phone }
+      })
+    },
+    // 点击发送验证码按钮
+    async handleSendCaptcha() {
+      const {
+        phone
+      } = this.ruleForm
+      const {
+        phoneTest,
+        checkPhone
+      } = this
+      if (!phoneTest.test(phone)) {
         // 手机号码不正确
         this.$message({
           type: 'warning',
@@ -115,35 +117,63 @@ export default {
       } else {
         let isRegister = false
         // 判断手机号是否注册，注册则提示并退出
-        checkPhone(phone)
-          .then(resp => {
-            console.log(resp)
-            if (resp.exist !== -1) {
-              isRegister = true
-              return
-            }
-
+        await checkPhone(phone).then(resp => {
+          if (resp.exist === 1) {
+            isRegister = true
             // 号码已经存在
-            this.$message({
-              type: 'error',
-              message: '该手机号已被注册'
+            this.$alert('该手机号已经注册', '系统提示', {
+              confirmButtonText: '确定',
+              callback: action => {
+                // 存在就跳转到登陆页面
+                this.jumpToLogin()
+              }
             })
-          })
+            return
+          }
+        })
+        console.log(isRegister)
         if (isRegister) return
-        this.$http.sendCaptcha(phone)
-          .then(resp => {
-            if (resp.code !== 200) return
-            this.$message({
-              type: 'success',
-              message: '验证码发送成功!'
-            })
+        this.$http.sendCaptcha(phone).then(resp => {
+          if (resp.code !== 200) return
+          this.$message({
+            type: 'success',
+            message: '验证码发送成功!'
           })
+        })
       }
     },
+    // 开始注册
+    startRegister() {
+      const { nickname, checkPass, captcha, phone } = this.ruleForm
+      this.$http.register({ nickname, password: checkPass, captcha, phone })
+        .then(resp => {
+          if (resp.token) {
+            this.$message({
+              type: 'success',
+              message: '创建成功,用户名为: ' + phone
+            })
+
+            setTimeout(() => {
+              // 跳转到登陆页
+              this.jumpToLogin()
+            }, 5000)
+            return
+          }
+
+          if (resp.code === 503) {
+            this.$message({
+              type: 'error',
+              message: resp.message
+            })
+          }
+        })
+    },
     submitForm(formName) {
-      this.$refs[formName].validate((valid) => {
+      this.$refs[formName].validate(valid => {
         if (valid) {
-          alert('submit!')
+          console.log(this.ruleForm)
+          // 表单没有问题, 开始注册
+          this.startRegister()
         } else {
           console.log('error submit!!')
           return false
@@ -155,6 +185,7 @@ export default {
     }
   }
 }
+
 </script>
 <style lang='scss' scoped>
 .register-page {
@@ -163,8 +194,7 @@ export default {
   justify-content: center;
   align-items: center;
   font-family: Lato, sans-serif;
-  background: url('~@/assets/image/login-background.jpg') 0 / cover
-    fixed;
+  background: url("~@/assets/image/login-background.jpg") 0 / cover fixed;
 }
 
 .login-form {
@@ -175,14 +205,10 @@ export default {
   color: white;
   background: rgba(0, 0, 0, 0.8);
   border-radius: 10px;
-  box-shadow:
-  0 0.4px 0.6px rgba(0, 0, 0, 0.141),
-  0 1px 1.3px rgba(0, 0, 0, 0.202),
-  0 1.9px 2.5px rgba(0, 0, 0, 0.25),
-  0 3.4px 4.5px rgba(0, 0, 0, 0.298),
-  0 6.3px 8.4px rgba(0, 0, 0, 0.359),
-  0 15px 20px rgba(0, 0, 0, 0.5)
-;
+  box-shadow: 0 0.4px 0.6px rgba(0, 0, 0, 0.141),
+    0 1px 1.3px rgba(0, 0, 0, 0.202), 0 1.9px 2.5px rgba(0, 0, 0, 0.25),
+    0 3.4px 4.5px rgba(0, 0, 0, 0.298), 0 6.3px 8.4px rgba(0, 0, 0, 0.359),
+    0 15px 20px rgba(0, 0, 0, 0.5);
 
   h1 {
     margin: 0 0 0.3em 0;
@@ -287,5 +313,4 @@ export default {
     }
   }
 }
-
 </style>
